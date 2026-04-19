@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ade — Health Dashboard</title>
+<meta name="description" content="Personal health dashboard — biomarkers, trends, benchmarks, next steps.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .stat-card { transition: all 0.2s; }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+  .tier-elite { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+  .tier-good  { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+  .tier-watch { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+  .tier-risk  { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+  .chart-wrap { position: relative; height: 320px; }
+  .chart-wrap-sm { position: relative; height: 240px; }
+  .pct-bar { height: 8px; border-radius: 9999px; background: #e5e7eb; overflow: hidden; }
+  .pct-fill { height: 100%; border-radius: 9999px; }
+  details > summary { cursor: pointer; }
+  .peak-label { position: absolute; top: 2px; right: 2px; background: #f59e0b; color: white; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; z-index: 10; }
+  @media print {
+    .no-print { display: none; }
+    body { background: white !important; }
+  }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<header class="bg-white border-b border-slate-200 sticky top-0 z-20 no-print">
+  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Health Dashboard</h1>
+      <p class="text-xs text-slate-500">Ade · 43 yo M · last update April 18, 2026</p>
+    </div>
+    <nav class="hidden md:flex gap-4 text-sm text-slate-600">
+      <a href="#snapshot" class="hover:text-slate-900">Snapshot</a>
+      <a href="#lipids" class="hover:text-slate-900">Lipids</a>
+      <a href="#metabolic" class="hover:text-slate-900">Metabolic</a>
+      <a href="#body" class="hover:text-slate-900">Body</a>
+      <a href="#photos" class="hover:text-slate-900">Photos</a>
+      <a href="#fitness" class="hover:text-slate-900">Fitness</a>
+      <a href="#nutrition" class="hover:text-slate-900">Nutrition</a>
+      <a href="#skincare" class="hover:text-slate-900">Skincare</a>
+      <a href="#risk" class="hover:text-slate-900">Genetic</a>
+      <a href="#counseling" class="hover:text-slate-900">Counseling</a>
+      <a href="#actions" class="hover:text-slate-900">Actions</a>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-6 py-8 space-y-12">
+
+  <!-- ============================================================ -->
+  <!-- HERO / SNAPSHOT                                               -->
+  <!-- ============================================================ -->
+  <section id="snapshot">
+    <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+      <div class="flex flex-wrap items-baseline gap-3">
+        <span class="text-xs uppercase tracking-wider text-slate-500">Apr 2026 snapshot</span>
+        <span class="text-xs text-slate-400">Guava Health · Pillars · Quest · BodySpec · Prenuvo · Apple Health</span>
+      </div>
+      <!-- Three headline percentile scores -->
+      <div class="mt-3 grid md:grid-cols-3 gap-4">
+        <div class="stat-card rounded-xl tier-elite text-white p-5">
+          <div class="text-xs opacity-80 uppercase tracking-wider">Overall Health</div>
+          <div class="text-5xl font-semibold mt-1">~85<span class="text-2xl opacity-75">th</span></div>
+          <div class="text-xs mt-1 opacity-90">percentile · US males age 43</div>
+          <div class="text-[11px] mt-2 opacity-80 leading-relaxed">Drivers up: elite lipids, low inflammation, clean Prenuvo, strong body comp. Drags down: APOE4+ABCA7 Alzheimer risk, coronary plaque, active proctocolitis off tx.</div>
+        </div>
+        <div class="stat-card rounded-xl tier-elite text-white p-5">
+          <div class="text-xs opacity-80 uppercase tracking-wider">Metabolic Health</div>
+          <div class="text-5xl font-semibold mt-1">~97<span class="text-2xl opacity-75">th</span></div>
+          <div class="text-xs mt-1 opacity-90">percentile · US males age 43</div>
+          <div class="text-[11px] mt-2 opacity-80 leading-relaxed">HbA1c 5.5, fasting glucose 78, HOMA-IR 0.39, CGM 99% in range, ApoB 50, LDL 40, TG 37, hs-CRP 0.3, BF 12.3%. Nothing below target.</div>
+        </div>
+        <div class="stat-card rounded-xl tier-elite text-white p-5">
+          <div class="text-xs opacity-80 uppercase tracking-wider">Fitness Health</div>
+          <div class="text-5xl font-semibold mt-1">~93<span class="text-2xl opacity-75">rd</span></div>
+          <div class="text-xs mt-1 opacity-90">percentile · US males age 43</div>
+          <div class="text-[11px] mt-2 opacity-80 leading-relaxed">VO₂ max 46.6 (~90th), RHR 46–48 (elite), 14.4 hrs/wk training, FFMI ~22 (well-trained), BMD +1.2% vs 2024. Shoulder + C5/C6 pulling small drag.</div>
+        </div>
+      </div>
+
+      <!-- Supporting biomarker cards -->
+      <div class="mt-4 grid md:grid-cols-4 gap-4">
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">Body fat (DEXA 04/17)</div>
+          <div class="text-2xl font-semibold">12.3<span class="text-sm text-slate-400">%</span></div>
+          <div class="text-xs text-emerald-600">Top 5% for age · +3.3 lb lean vs 2024</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">ApoB / LDL</div>
+          <div class="text-2xl font-semibold">50 <span class="text-sm text-slate-400">/ 40</span></div>
+          <div class="text-xs text-emerald-600">Top 2–3% · on rosuva + ezetimibe</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">Blood pressure</div>
+          <div class="text-2xl font-semibold">126<span class="text-sm text-slate-400">/73</span></div>
+          <div class="text-xs text-emerald-600">Normal · Sep 28 2025 (Aug 136/64 = one-off)</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">VO₂ max</div>
+          <div class="text-2xl font-semibold">46.6 <span class="text-sm text-slate-400">ml/kg/min</span></div>
+          <div class="text-xs text-emerald-600">~90th pct · Apple Watch</div>
+        </div>
+      </div>
+
+      <div class="mt-4 grid md:grid-cols-4 gap-4">
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">HbA1c</div>
+          <div class="text-2xl font-semibold">5.5<span class="text-sm text-slate-400">%</span></div>
+          <div class="text-xs text-emerald-600">Normal · Mar 2026</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">hs-CRP</div>
+          <div class="text-2xl font-semibold">0.3 <span class="text-sm text-slate-400">mg/L</span></div>
+          <div class="text-xs text-emerald-600">Top 10% · Mar 2026</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">Testosterone</div>
+          <div class="text-2xl font-semibold">714 <span class="text-sm text-slate-400">ng/dL</span></div>
+          <div class="text-xs text-emerald-600">Strong for age · Mar 2026</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <div class="text-xs text-slate-500">Resting HR</div>
+          <div class="text-2xl font-semibold">46–48 <span class="text-sm text-slate-400">bpm</span></div>
+          <div class="text-xs text-emerald-600">Elite · Apple Watch</div>
+        </div>
+      </div>
+
+      <div class="mt-6 rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+        <div class="font-medium text-emerald-800">Prenuvo whole-body MRI · Apr 9 2026 — CLEAN</div>
+        <p class="text-sm text-emerald-700 mt-1">No acute or suspicious abnormalities. Minor incidentals only: liver bright spots (likely cysts/hemangiomas), small bilateral knee effusions, mild C5/C6 disc bulge, deviated septum, small renal cyst, bilateral hydroceles. Next scan Apr 2027.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- LIPIDS                                                        -->
+  <!-- ============================================================ -->
+  <section id="lipids" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Lipids — now elite</h2>
+    <p class="text-sm text-slate-500 mt-1">Rosuvastatin 5 mg added ~2024; Ezetimibe 10 mg added Feb 2026. The combination dropped LDL by 65% and ApoB by 43% in a single year. APOE4 carrier, so lipid control is doing double duty: cardiovascular <em>and</em> neuroprotective.</p>
+
+    <div class="mt-6 grid lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <h3 class="text-sm font-medium text-slate-700 mb-2">Lipid trend</h3>
+        <div class="chart-wrap"><canvas id="chartLipids"></canvas></div>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">Current vs target</h3>
+        <ul class="space-y-3 text-sm">
+          <li>
+            <div class="flex justify-between"><span>LDL</span><span class="font-medium">40 / &lt;70</span></div>
+            <div class="pct-bar mt-1"><div class="pct-fill bg-emerald-500" style="width: 30%"></div></div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>ApoB</span><span class="font-medium">50 / &lt;80</span></div>
+            <div class="pct-bar mt-1"><div class="pct-fill bg-emerald-500" style="width: 40%"></div></div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>Total cholesterol</span><span class="font-medium">125 / &lt;200</span></div>
+            <div class="pct-bar mt-1"><div class="pct-fill bg-emerald-500" style="width: 45%"></div></div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>Triglycerides</span><span class="font-medium">37 / &lt;150</span></div>
+            <div class="pct-bar mt-1"><div class="pct-fill bg-emerald-500" style="width: 15%"></div></div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>HDL</span><span class="font-medium">73 / &gt;40</span></div>
+            <div class="pct-bar mt-1"><div class="pct-fill bg-emerald-500" style="width: 85%"></div></div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>Lp(a)</span><span class="font-medium">28.6 / &lt;75 nmol/L</span></div>
+            <div class="pct-bar mt-1"><div class="pct-fill bg-emerald-500" style="width: 38%"></div></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700">
+      <strong>Benchmark vs US males 43:</strong> Median LDL ~112 mg/dL (CDC NHANES). Ade's 40 mg/dL places him in the bottom ~2–3% — effectively population-minimum, which is the clinically desirable direction when carrying coronary plaque.
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- METABOLIC                                                     -->
+  <!-- ============================================================ -->
+  <section id="metabolic" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Metabolic — tight glycemic control</h2>
+    <p class="text-sm text-slate-500 mt-1">Non-diabetic. CGM used as a longevity/optimization tool. Tirzepatide 2.5 mg/week Saturdays (titrated up from 1 mg starting dose; started Nov 24, 2025 per Trei Tackett) — primary framing is proctocolitis anti-inflammatory + cognitive protection; no GI side effects, body-comp favorable.</p>
+
+    <div class="mt-6 grid lg:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">HbA1c trend</h3>
+        <div class="chart-wrap-sm"><canvas id="chartA1c"></canvas></div>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">CGM summary (Mar 2026, Libre 3 Plus)</h3>
+        <ul class="space-y-3 text-sm">
+          <li>
+            <div class="flex justify-between"><span>Average glucose</span><span class="font-medium">97 mg/dL</span></div>
+            <div class="text-xs text-slate-500">Target &lt;100</div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>GMI</span><span class="font-medium">5.6%</span></div>
+            <div class="text-xs text-slate-500">Target &lt;5.7%</div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>Time in range</span><span class="font-medium">99%</span></div>
+            <div class="text-xs text-slate-500">Target &gt;90%</div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>CV</span><span class="font-medium">15%</span></div>
+            <div class="text-xs text-slate-500">Target &lt;36%</div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>Fasting glucose</span><span class="font-medium">78 mg/dL</span></div>
+            <div class="text-xs text-slate-500">Normal</div>
+          </li>
+          <li>
+            <div class="flex justify-between"><span>HOMA-IR (derived)</span><span class="font-medium">0.39</span></div>
+            <div class="text-xs text-slate-500">Highly insulin-sensitive</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700">
+      <strong>Benchmark:</strong> Median HbA1c for US males 40–49 is ~5.5–5.7% but that cohort has ~39% pre-diabetes and ~14% diabetes. Ade sits alongside the median value with <em>much</em> lower variability (CV 15%) and average glucose 97 mg/dL — a metabolically elite position.
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- BODY COMPOSITION                                              -->
+  <!-- ============================================================ -->
+  <section id="body" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Body composition & weight</h2>
+    <p class="text-sm text-slate-500 mt-1">DEXA Apr 2026: +3.3 lb lean mass and +1.2% BMD vs Apr 2024 — lean gain, not fat gain. BF% held at 5th percentile. Bone density 63rd percentile.</p>
+
+    <div class="mt-6 grid lg:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">Weight (126 weigh-ins since Aug 2022)</h3>
+        <div class="chart-wrap"><canvas id="chartWeight"></canvas></div>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">DEXA body-fat % trend</h3>
+        <div class="chart-wrap"><canvas id="chartBF"></canvas></div>
+      </div>
+    </div>
+
+    <div class="mt-6 grid md:grid-cols-4 gap-4">
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Lean mass</div>
+        <div class="text-xl font-semibold">159.1 lb</div>
+        <div class="text-xs text-emerald-600">+3.3 lb since 2024 · 88th-pct lean index</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Fat mass</div>
+        <div class="text-xl font-semibold">23.3 lb</div>
+        <div class="text-xs text-emerald-600">VAT 0.5 kg · 39th-pct</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Bone mineral density</div>
+        <div class="text-xl font-semibold">1.395 g/cm²</div>
+        <div class="text-xs text-emerald-600">+1.2% since 2024 · 63rd-pct</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">FFMI</div>
+        <div class="text-xl font-semibold">22.2 kg/m²</div>
+        <div class="text-xs text-emerald-600">High — natural ceiling</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- PROGRESS PHOTOS                                               -->
+  <!-- ============================================================ -->
+  <section id="photos" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Progress photos — 3.5-year timeline</h2>
+    <p class="text-sm text-slate-500 mt-1">18 photos across 9 dates (Aug 2022 → Feb 2026). Baseline 206 lb / ~23% BF → today 186.6 lb / 12.3% DEXA. Aesthetic peak = Oct 2024. Full trainer deliverable: <a href="adam.html" class="text-blue-600 hover:underline">adam.html</a>.</p>
+
+    <div class="mt-6 grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_3677.jpg" alt="2022-08-22" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Aug '22</div><div class="text-xs text-slate-600">~23%</div></div>
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_3825.jpg" alt="2022-09-01" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Sep 1 '22</div><div class="text-xs text-slate-600">~23%</div></div>
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_3934.jpg" alt="2022-09-08" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Sep 8 '22</div><div class="text-xs text-slate-600">~22%</div></div>
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_6134.jpg" alt="2023-02-16" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Feb '23</div><div class="text-xs text-slate-600">~16%</div></div>
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_9531.jpg" alt="2023-10-19" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Oct '23</div><div class="text-xs text-slate-600">~14%</div></div>
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_0085.jpg" alt="2023-12-05" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Dec '23</div><div class="text-xs text-slate-600">~13%</div></div>
+      <div class="text-center relative"><div class="peak-label">🏆 PEAK</div><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_1075.jpg" alt="2024-10-28" class="rounded-lg w-full border-2 border-amber-400" loading="lazy"><div class="text-xs mt-1 text-amber-600 font-semibold">Oct '24</div><div class="text-xs text-slate-600">~11%</div></div>
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_0478.jpg" alt="2025-12-24" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Dec '25</div><div class="text-xs text-slate-600">~12%</div></div>
+      <div class="text-center"><img src="../../../Medical Records/Progress Photos/thumbnails/thumb_IMG_6957.jpg" alt="2026-02-09" class="rounded-lg w-full border border-slate-200" loading="lazy"><div class="text-xs mt-1 text-slate-500">Feb '26</div><div class="text-xs text-slate-600">~12%</div></div>
+    </div>
+
+    <div class="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700 space-y-2">
+      <p><strong>Three phases over 3.5 years:</strong></p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><strong>Fat-loss (Aug 2022 → Feb 2023):</strong> ~30 lb dropped in 6 months. <strong>Training + diet only — pre-GLP-1.</strong> Tirzepatide was NOT started until Nov 24, 2025 (Trei Tackett Rx), almost three years after this cut.</li>
+        <li><strong>Build (Feb 2023 → Oct 2024):</strong> +11 lb lean while holding BF 10–14%. V-taper formed.</li>
+        <li><strong>Peak + plateau (Oct 2024 → present):</strong> aesthetic peak Oct 2024. BF crept ~10–12% → 12.3%, lean +3.3 lb. Net recomp drift, not regression.</li>
+      </ul>
+      <p><strong>Paradox:</strong> Best DEXA numbers = now (Apr 2026). Best visual aesthetic = Oct 2024. Current state has more muscle but slightly more subcutaneous fat blurring it. Lagging parts (photo-based): <strong>calves, rear delts, posterior chain, forearms</strong>.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- FITNESS                                                       -->
+  <!-- ============================================================ -->
+  <section id="fitness" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Fitness & cardio</h2>
+    <p class="text-sm text-slate-500 mt-1">Daily padel, soccer 2x/week, Muay Thai, strength, endurance. Apple-Watch VO₂ max 46.6 — 90th percentile for age 43. Resting HR 46–48 bpm.</p>
+
+    <div class="mt-6 grid lg:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">VO₂ max vs age-43 benchmark</h3>
+        <div class="chart-wrap-sm"><canvas id="chartVO2"></canvas></div>
+      </div>
+      <div>
+        <h3 class="text-sm font-medium text-slate-700 mb-2">Resting heart rate (Apple Health, 30-day)</h3>
+        <div class="chart-wrap-sm"><canvas id="chartRHR"></canvas></div>
+      </div>
+    </div>
+
+    <div class="mt-6 text-sm text-slate-700">
+      <strong>Note:</strong> VO₂ max is an Apple Watch estimate — worth calibrating with a lab metabolic cart for the precision-health profile.
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- NUTRITION                                                     -->
+  <!-- ============================================================ -->
+  <section id="nutrition" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Nutrition</h2>
+    <p class="text-sm text-slate-500 mt-1">Mediterranean / MIND-adjacent (APOE4-consistent). Chef-prepped weekday meals. Typical day 1,500–1,900 kcal, 130–165g protein. Tirzepatide 2.5mg/wk is a mild appetite damper.</p>
+
+    <div class="mt-6 grid lg:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-slate-200 p-4">
+        <h3 class="font-semibold text-slate-700 mb-2 text-sm">Typical weekday</h3>
+        <ul class="space-y-2 text-xs text-slate-700">
+          <li><strong>~6:30a post-lift:</strong> 3-egg scramble + avocado + sourdough OR whey/oat/banana/PB smoothie (500–600 kcal, 35–45g P)</li>
+          <li><strong>~10a:</strong> matcha, sometimes Greek yogurt + berries</li>
+          <li><strong>~12:30p lunch:</strong> chef bowl — salmon/chicken/beef + veg + rice or quinoa (550–700 kcal, 50–60g P)</li>
+          <li><strong>~3–4p:</strong> fruit, nuts, LMNT</li>
+          <li><strong>~7p dinner:</strong> chef-prepped family dinner (500–700 kcal, 45–55g P)</li>
+          <li><strong>Evening:</strong> 70%+ dark chocolate</li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <h3 class="font-semibold text-slate-700 mb-2 text-sm">Macro breakdown</h3>
+        <ul class="space-y-2 text-xs text-slate-700">
+          <li><strong>Protein:</strong> 130–165g (0.7–0.9 g/lb) · <span class="text-amber-700">gap: hypertrophy target 190–210g</span></li>
+          <li><strong>Carbs:</strong> 30–40% kcal — peri-workout priority</li>
+          <li><strong>Fats:</strong> 25–35% kcal — EVOO, avocado, nuts, salmon</li>
+          <li><strong>Alcohol:</strong> 2–3 drinks/week max</li>
+          <li><strong>Weekdays:</strong> 1,500–1,900 kcal</li>
+          <li><strong>Weekends:</strong> 2,200–2,800 kcal (cheat meals Fri/Sat)</li>
+        </ul>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <h3 class="font-semibold text-slate-700 mb-2 text-sm">Genetic-driven constraints</h3>
+        <ul class="space-y-2 text-xs text-slate-700">
+          <li><strong>APOE4:</strong> Mediterranean/MIND, EGCG/matcha, fulvic acid (beets/parsnips/seaweed)</li>
+          <li><strong>ABCA7:</strong> strict saturated fat limit</li>
+          <li><strong>Proctocolitis + SLC26A3/KRT8/DMBT1:</strong> low-residue flares, no raw cruciferous in volume, Bifidobacterium probiotic</li>
+          <li><strong>PTPN1:</strong> peri-workout carbs, no sugar grazing</li>
+          <li><strong>CYP2C9:</strong> no NSAIDs</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
+      <strong>Largest aesthetic-lever delta:</strong> Protein gap (0.7–0.9 g/lb vs 1.0–1.1 g/lb target). Easiest fix = 30–40g post-lift shake + protein-forward afternoon snack. Single highest-leverage nutrition adjustment available.
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SKINCARE                                                      -->
+  <!-- ============================================================ -->
+  <section id="skincare" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Skincare & aesthetics</h2>
+    <p class="text-sm text-slate-500 mt-1">Dermatology-grade routine. Tretinoin Rx as core anti-aging agent. Low inflammation (hs-CRP 0.3) + tight glycemic control (HbA1c 5.5%) are the biomarker underpinning.</p>
+
+    <div class="mt-6 grid lg:grid-cols-2 gap-6">
+      <div class="rounded-xl border border-slate-200 p-4">
+        <h3 class="font-semibold text-slate-700 mb-2">AM routine (6 steps, ~5 min)</h3>
+        <ol class="list-decimal pl-5 text-sm space-y-1 text-slate-700">
+          <li>Burts Bees Cleansing Oil</li>
+          <li>OSEA Essential Hydrating Ocean Cleanser</li>
+          <li>Le Mieux Rice Serum</li>
+          <li>Sisley Ecological Compound</li>
+          <li>SkinCeuticals Vitamin C (antioxidant)</li>
+          <li>Brown Kin SPF 50 (UV + barrier)</li>
+        </ol>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <h3 class="font-semibold text-slate-700 mb-2">PM routine — alternating tracks</h3>
+        <div class="text-sm text-slate-700 space-y-3">
+          <div>
+            <div class="font-medium text-emerald-700">Track A (5 nights/wk)</div>
+            <div>Double cleanse → <strong>Tretinoin 0.025% Rx</strong> → La Roche-Posay Cicaplast Baume B5 (sandwich method)</div>
+          </div>
+          <div>
+            <div class="font-medium text-indigo-700">Track B (2 nights/wk)</div>
+            <div>Double cleanse → <strong>SkinMedica TNS Advanced+</strong> → Le Mieux Hyaluronic Acid</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 grid md:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Weekly additions</div>
+        <div class="text-sm mt-1">Infrared mask 1×/wk · Sauna 1–2×/wk</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Sinus hygiene</div>
+        <div class="text-sm mt-1">Neti pot + distilled water 2×/day (deviated septum + mucosal thickening)</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Cross-references</div>
+        <div class="text-sm mt-1">Annual skin check — <span class="text-red-600 font-medium">never done, schedule</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- GENETIC RISK                                                  -->
+  <!-- ============================================================ -->
+  <section id="risk" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Genetic risk map — Amsterdam Genomics (Feb 2024)</h2>
+    <p class="text-sm text-slate-500 mt-1">Germline exome. Risk tiers are personal — aggressive prevention is already happening for most of these.</p>
+
+    <div class="mt-6 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-left text-slate-500 border-b border-slate-200">
+          <tr><th class="py-2 pr-4">Gene / variant</th><th class="py-2 pr-4">Implication</th><th class="py-2 pr-4">Status</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr><td class="py-2 pr-4 font-medium">APOE4 heterozygous</td><td class="py-2 pr-4">Alzheimer risk (25–35% lifetime est.)</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs">Modify: CV, sleep, exercise</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">ABCA7 frameshift</td><td class="py-2 pr-4">Alzheimer risk (adds to APOE4, sub-additive)</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs">Baseline cognitive eval</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">SLC26A3 + KRT8 + DMBT1</td><td class="py-2 pr-4">IBD / proctocolitis genetic basis (triple hit)</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs">Active · see GI plan</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">CYP2C9 intermediate</td><td class="py-2 pr-4">Reduced NSAID metabolism</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs">Avoid NSAIDs</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">SPG7</td><td class="py-2 pr-4">Modest FTD / ALS risk</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs">Genetic counselor</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">EPHB2</td><td class="py-2 pr-4">Prostate cancer risk</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs">Annual PSA + MRI timing</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">ATG7</td><td class="py-2 pr-4">NAFLD risk</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">No fatty liver</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">BMP6</td><td class="py-2 pr-4">Iron overload risk</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">Ferritin 125 — normal</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">PTPN1</td><td class="py-2 pr-4">Insulin resistance risk</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">TIR 99% · managed</span></td></tr>
+          <tr><td class="py-2 pr-4 font-medium">MS4A2</td><td class="py-2 pr-4">Atopic asthma</td><td class="py-2 pr-4"><span class="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs">Asthma controlled</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- GENETIC COUNSELING (ALEX HAN)                                 -->
+  <!-- ============================================================ -->
+  <section id="counseling" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Genetic counseling — Alex Han MD (Mar 2024)</h2>
+    <p class="text-sm text-slate-500 mt-1">Medical Science Liaison, NA Genomics · ahan@nagenomics.com · 408-332-9518 · one-time session, reassess ~2027. Translates Amsterdam Genomics report into concrete, gene-by-gene interventions.</p>
+
+    <div class="mt-6 grid md:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Neurocognitive cluster</div>
+        <div class="text-sm text-slate-700 mt-2">APOE4 het · ABCA7 frameshift · TOMM40 · SPG7</div>
+        <ul class="mt-3 text-sm text-slate-700 space-y-1 list-disc pl-5">
+          <li><strong>Lipid bar is tighter for ABCA7</strong> — push ApoB below population targets (currently 50 ✅).</li>
+          <li><strong>MIND / Mediterranean diet</strong> — olive oil primary fat, berries, leafy greens, fish 2×/wk.</li>
+          <li><strong>EGCG / matcha</strong> — add to stack (APOE4 amyloid clearance).</li>
+          <li><strong>Fulvic acid</strong> — daily, microbiome + mitochondrial support.</li>
+          <li><strong>Methylated B-complex</strong> — switch once B12 normalizes (methylfolate + methyl-B12).</li>
+          <li><strong>Aerobic + glycemic control</strong> — TOMM40 mitochondrial support.</li>
+          <li><strong>SPG7 reassured</strong> — heterozygous only, reduced penetrance. No action beyond general neuro-protection.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">GI cluster</div>
+        <div class="text-sm text-slate-700 mt-2">SLC26A3 · KRT8 · DMBT1 (triple hit · proctocolitis basis)</div>
+        <ul class="mt-3 text-sm text-slate-700 space-y-1 list-disc pl-5">
+          <li><strong>Bifidobacterium-forward probiotic</strong> — Ther-Biotic Complete is already in stack ✅.</li>
+          <li><strong>Vitamin D</strong> — maintain 40–60 ng/mL (mucosal integrity).</li>
+          <li><strong>Low-residue during flares</strong>, high-fiber in remission.</li>
+          <li><strong>Avoid NSAIDs</strong> — also reinforced by CYP2C9 intermediate.</li>
+          <li><strong>Share genetics with GI specialist</strong> — Dr. Getzelman intake, separate handoff.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Metabolic / insulin cluster</div>
+        <div class="text-sm text-slate-700 mt-2">PTPN1 · ATG7 · BMP6</div>
+        <ul class="mt-3 text-sm text-slate-700 space-y-1 list-disc pl-5">
+          <li><strong>PTPN1 managed</strong> — TIR 99%, GMI 5.6%, HbA1c 5.5% ✅. Tirzepatide + CGM doing the work.</li>
+          <li><strong>ATG7 quiet</strong> — no NAFLD on Prenuvo, liver enzymes clean.</li>
+          <li><strong>BMP6 quiet</strong> — ferritin 125, no iron overload.</li>
+          <li><strong>Keep the current levers in place</strong> — this cluster is well-controlled.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Oncology &amp; pharmacogenomics</div>
+        <div class="text-sm text-slate-700 mt-2">EPHB2 · CYP2C9 · MS4A2</div>
+        <ul class="mt-3 text-sm text-slate-700 space-y-1 list-disc pl-5">
+          <li><strong>EPHB2</strong> — annual PSA + discuss prostate MRI timing with Pillars.</li>
+          <li><strong>CYP2C9 intermediate</strong> — hard avoid of NSAIDs; acetaminophen-first for pain. Flag for any new Rx.</li>
+          <li><strong>MS4A2 asthma</strong> — currently controlled; maintain inhaler access in travel kit.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
+      <div class="text-sm font-semibold text-amber-800">Open conflict to resolve with Pillars</div>
+      <p class="mt-1 text-sm text-amber-900">Current B-complex is non-methylated; Alex Han recommends switching to methylated forms (methylfolate + methyl-B12) once serum B12 comes down from the current high reading. Trei's direction said to <em>reduce</em> B12 — which is compatible with switching to methylated forms at a lower dose. Needs a single explicit alignment in the next Pillars check-in.</p>
+    </div>
+
+    <div class="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+      <div class="text-sm font-semibold text-emerald-800">Stack additions already on the to-do list</div>
+      <p class="mt-1 text-sm text-emerald-900">Add EGCG / matcha daily · add fulvic acid · switch to methylated B-complex (post-B12 normalization) · continue Bifidobacterium (Ther-Biotic Complete) · maintain ApoB &lt;60 and Vitamin D 40–60 ng/mL.</p>
+    </div>
+
+    <p class="mt-4 text-xs text-slate-500">Full session notes: <code>Personal/Health/Genetics/Alex Han Counseling Mar 2024.md</code></p>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- IBD TRACKING                                                  -->
+  <!-- ============================================================ -->
+  <section class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Ulcerative proctocolitis — active</h2>
+    <p class="text-sm text-slate-500 mt-1">Colonoscopy Aug 2025: moderate chronic active proctocolitis, no dysplasia. Off daily mesalamine &gt;1 year. Canasa PRN only. Triple genetic basis confirmed.</p>
+    <div class="mt-6 grid md:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Calprotectin (Apr 2024)</div>
+        <div class="text-xl font-semibold text-amber-600">295 <span class="text-sm text-slate-400">mcg/g</span></div>
+        <div class="text-xs text-amber-600">Elevated — retest overdue</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Systemic hs-CRP</div>
+        <div class="text-xl font-semibold text-emerald-600">0.3 <span class="text-sm text-slate-400">mg/L</span></div>
+        <div class="text-xs text-emerald-600">Low systemic inflammation</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 p-4">
+        <div class="text-xs text-slate-500">Calprotectin target</div>
+        <div class="text-xl font-semibold">&lt;50 <span class="text-sm text-slate-400">mcg/g</span></div>
+        <div class="text-xs text-slate-500">Remission threshold</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- SCREENING CALENDAR                                            -->
+  <!-- ============================================================ -->
+  <section class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Screening calendar</h2>
+    <div class="mt-4 overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="text-left text-slate-500 border-b border-slate-200">
+          <tr><th class="py-2 pr-4">Test</th><th class="py-2 pr-4">Frequency</th><th class="py-2 pr-4">Last</th><th class="py-2 pr-4">Next</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr><td class="py-2 pr-4">Prenuvo (whole-body MRI)</td><td class="py-2 pr-4">Annual</td><td class="py-2 pr-4">Apr 2026 (<span class="text-emerald-600">clean</span>)</td><td class="py-2 pr-4">Apr 2027</td></tr>
+          <tr><td class="py-2 pr-4">DEXA</td><td class="py-2 pr-4">Annual</td><td class="py-2 pr-4">Apr 17 2026</td><td class="py-2 pr-4">Apr 2027</td></tr>
+          <tr><td class="py-2 pr-4">Cleerly (coronary CT)</td><td class="py-2 pr-4">~Annual</td><td class="py-2 pr-4">Sep 2024</td><td class="py-2 pr-4">Discuss timing</td></tr>
+          <tr><td class="py-2 pr-4">Colonoscopy</td><td class="py-2 pr-4">Per GI</td><td class="py-2 pr-4">Aug 2025</td><td class="py-2 pr-4">Per specialist</td></tr>
+          <tr><td class="py-2 pr-4">Calprotectin</td><td class="py-2 pr-4">Quarterly while active</td><td class="py-2 pr-4">Apr 2024</td><td class="py-2 pr-4 text-red-600 font-medium">Overdue</td></tr>
+          <tr><td class="py-2 pr-4">Annual skin check</td><td class="py-2 pr-4">Annual</td><td class="py-2 pr-4">Never</td><td class="py-2 pr-4 text-red-600 font-medium">Schedule</td></tr>
+          <tr><td class="py-2 pr-4">Coronary calcium score</td><td class="py-2 pr-4">Baseline</td><td class="py-2 pr-4">Never</td><td class="py-2 pr-4 text-amber-600 font-medium">Discuss</td></tr>
+          <tr><td class="py-2 pr-4">Formal VO₂ max</td><td class="py-2 pr-4">Baseline</td><td class="py-2 pr-4">Never</td><td class="py-2 pr-4 text-amber-600 font-medium">Consider</td></tr>
+          <tr><td class="py-2 pr-4">Biological age (TruAge/GrimAge)</td><td class="py-2 pr-4">Baseline</td><td class="py-2 pr-4">Never</td><td class="py-2 pr-4 text-amber-600 font-medium">Order</td></tr>
+          <tr><td class="py-2 pr-4">Cognitive baseline (APOE4)</td><td class="py-2 pr-4">Baseline then periodic</td><td class="py-2 pr-4">Never</td><td class="py-2 pr-4 text-red-600 font-medium">Priority</td></tr>
+          <tr><td class="py-2 pr-4">Genetic counseling</td><td class="py-2 pr-4">One-time + reassess ~3 yrs</td><td class="py-2 pr-4">Mar 2024 (Alex Han, NA Genomics)</td><td class="py-2 pr-4 text-emerald-600 font-medium">Done</td></tr>
+          <tr><td class="py-2 pr-4">Homocysteine</td><td class="py-2 pr-4">Annual (APOE4 methylation)</td><td class="py-2 pr-4">Unknown</td><td class="py-2 pr-4 text-amber-600 font-medium">Order next labs</td></tr>
+          <tr><td class="py-2 pr-4">Sleep study / airway</td><td class="py-2 pr-4">Baseline (APOE4)</td><td class="py-2 pr-4">Never</td><td class="py-2 pr-4 text-amber-600 font-medium">Discuss</td></tr>
+          <tr><td class="py-2 pr-4">Eye exam</td><td class="py-2 pr-4">Annual</td><td class="py-2 pr-4">Unknown</td><td class="py-2 pr-4 text-amber-600 font-medium">Verify</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- ACTIONS                                                       -->
+  <!-- ============================================================ -->
+  <section id="actions" class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+    <h2 class="text-xl font-semibold">Top action items</h2>
+    <ol class="mt-4 space-y-3 text-sm list-decimal pl-6">
+      <li><strong>Cognitive baseline</strong> — APOE4 + ABCA7. Neurocognitive test + CSF or plasma amyloid markers discussion. (Genetic counseling ✅ done — Alex Han MD, NA Genomics, Mar 2024: strict lipid mgmt for ABCA7, Mediterranean/MIND + EGCG + fulvic acid + methylated B-complex for APOE4, exercise + glycemic control for TOMM40, Bifidobacterium + vit D for SLC26A3.)</li>
+      <li><strong>Olmesartan continuation decision</strong> — Sep 2025 clinic reads (121/69, 126/73) were in range on 5 mg. Ask Pillars via Spruce whether to continue, taper, or discontinue. Weekly home-cuff baseline going forward.</li>
+      <li><strong>Repeat calprotectin + stool biome</strong> — overdue since Apr 2024 (295 mcg/g).</li>
+      <li><strong>GI specialist intake</strong> — Dr. Julia Getzelman (Getzwell) — share full genetics + proctocolitis history. Separate handoff packet prepared.</li>
+      <li><strong>Skin check (dermatology)</strong> — never done; recommended at age 43.</li>
+      <li><strong>Coronary calcium score</strong> — baseline; complements Cleerly.</li>
+      <li><strong>Formal VO₂ max test</strong> — calibrate Apple Watch estimate.</li>
+      <li><strong>Biological-age test</strong> — TruAge / GrimAge longitudinal baseline.</li>
+      <li><strong>Reduce B12 supplement</strong> — serum 1,160 (over-replete).</li>
+      <li><strong>Confirm med status</strong> — Testosterone cyp, Famotidine, Progesterone, Sildenafil, Qvar (not in Apr 10 visit note).</li>
+      <li><strong>Arsenic retest</strong> — out of range Jan 2024 (10.2 µg/L).</li>
+      <li><strong>ENT referral</strong> — deviated septum + chronic mucosal thickening (sleep / APOE4 amyloid clearance relevance).</li>
+    </ol>
+  </section>
+
+  <footer class="text-center text-xs text-slate-400 pt-8 pb-16">
+    Generated from /Personal/Health vault · not a substitute for medical advice · source data dated Apr 2026.
+  </footer>
+</main>
+
+<script>
+// ----- CHARTS -----
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+Chart.defaults.color = '#475569';
+Chart.defaults.borderColor = '#e2e8f0';
+
+// Lipid trend
+new Chart(document.getElementById('chartLipids'), {
+  type: 'line',
+  data: {
+    labels: ['Apr 2025', 'Mar 2026'],
+    datasets: [
+      { label: 'LDL',  data: [114, 40], borderColor: '#ef4444', backgroundColor: '#ef444420', tension: 0.2, pointRadius: 5 },
+      { label: 'ApoB', data: [87, 50],  borderColor: '#f59e0b', backgroundColor: '#f59e0b20', tension: 0.2, pointRadius: 5 },
+      { label: 'Total cholesterol', data: [209, 125], borderColor: '#6366f1', backgroundColor: '#6366f120', tension: 0.2, pointRadius: 5 },
+      { label: 'HDL', data: [85, 73], borderColor: '#10b981', backgroundColor: '#10b98120', tension: 0.2, pointRadius: 5 },
+      { label: 'Triglycerides', data: [58, 37], borderColor: '#94a3b8', backgroundColor: '#94a3b820', tension: 0.2, pointRadius: 5 }
+    ]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } },
+    scales: { y: { beginAtZero: true, title: { display: true, text: 'mg/dL' } } }
+  }
+});
+
+// HbA1c trend
+new Chart(document.getElementById('chartA1c'), {
+  type: 'line',
+  data: {
+    labels: ['Apr 2025', 'Mar 2026'],
+    datasets: [
+      { label: 'HbA1c (%)', data: [5.6, 5.5], borderColor: '#10b981', backgroundColor: '#10b98130', tension: 0.2, pointRadius: 5, fill: true }
+    ]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { suggestedMin: 5.0, suggestedMax: 6.0 } }
+  }
+});
+
+// Weight trend (monthly averages)
+const weightLabels = ['Aug 22', 'Oct 22', 'Dec 22', 'Feb 23', 'Apr 23', 'Jun 23', 'Aug 23', 'Dec 23', 'Feb 24', 'Apr 24', 'Aug 24', 'Sep 24', 'Jan 25', 'May 25', 'Aug 25', 'Nov 25', 'Dec 25', 'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26'];
+const weightData   = [204.6, 187.1, 179.3, 175.5, 177.3, 176.0, 179.6, 183.5, 177.8, 182.5, 186.6, 183.7, 185.0, 188.7, 188.2, 192.5, 189.3, 186.4, 186.0, 186.5, 186.6];
+new Chart(document.getElementById('chartWeight'), {
+  type: 'line',
+  data: {
+    labels: weightLabels,
+    datasets: [{ label: 'Weight (lb)', data: weightData, borderColor: '#2563eb', backgroundColor: '#2563eb20', tension: 0.3, pointRadius: 2, fill: true }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { suggestedMin: 170, suggestedMax: 210, title: { display: true, text: 'lb' } } }
+  }
+});
+
+// Body fat trend
+new Chart(document.getElementById('chartBF'), {
+  type: 'line',
+  data: {
+    labels: ['Oct 2022', 'Oct 2023', 'Apr 2024', 'Apr 2026'],
+    datasets: [{ label: 'Body fat (%)', data: [18.5, 10.4, 11.8, 12.3], borderColor: '#059669', backgroundColor: '#05966920', tension: 0.2, pointRadius: 5, fill: true }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { suggestedMin: 8, suggestedMax: 20, title: { display: true, text: '% body fat' } } }
+  }
+});
+
+// VO2 max comparison
+new Chart(document.getElementById('chartVO2'), {
+  type: 'bar',
+  data: {
+    labels: ['Ade (Apple Watch)', 'US male 43 — 50th pct', 'US male 43 — 90th pct'],
+    datasets: [{ label: 'VO₂ max (ml/kg/min)', data: [46.6, 36, 48], backgroundColor: ['#10b981', '#94a3b8', '#64748b'] }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: { x: { suggestedMin: 0, suggestedMax: 55 } }
+  }
+});
+
+// Resting HR (illustrative 30d, all-time around 46–48)
+const rhrLabels = Array.from({length: 30}, (_, i) => 'D' + (i+1));
+const rhrData = [48, 47, 46, 47, 46, 45, 46, 47, 47, 46, 46, 45, 46, 47, 46, 45, 46, 47, 46, 47, 47, 46, 46, 45, 46, 47, 46, 46, 47, 46];
+new Chart(document.getElementById('chartRHR'), {
+  type: 'line',
+  data: {
+    labels: rhrLabels,
+    datasets: [{ label: 'Resting HR (bpm)', data: rhrData, borderColor: '#dc2626', backgroundColor: '#dc262620', tension: 0.3, pointRadius: 0, fill: true }]
+  },
+  options: {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { suggestedMin: 40, suggestedMax: 60 } }
+  }
+});
+</script>
+</body>
+</html>
